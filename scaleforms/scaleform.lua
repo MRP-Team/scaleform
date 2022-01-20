@@ -9,11 +9,11 @@ function Scaleform.Request(Name)
 	while not HasScaleformMovieLoaded(ScaleformHandle) do Citizen.Wait(0) 
 		if GetGameTimer() - StartTime >= 5000 then
 			print("loading failed")
-			return
+			return false
 		end 
 	end
-	print("Loaded")
-	local data = {name = Name, handle = ScaleformHandle}
+
+	local data = {name = Name, handle = ScaleformHandle, isHud = false}
 	return setmetatable(data, scaleform)
 end
 
@@ -24,48 +24,41 @@ function Scaleform.RequestHud(id)
 		Citizen.Wait(0) 
 		if GetGameTimer() - StartTime >= 5000 then
 			print("loading failed")
-			return
+			return false
 		end
 	end
-	print("Loaded")
-	local data = {Name = id, handle = ScaleformHandle}
+
+	local data = {Name = id, handle = id, isHud = true}
 	return setmetatable(data, scaleform)
 end
 
-function scaleform:CallScaleFunction(scType, theFunction, ...)
-	if scType == "hud" then
+function scaleform:CallFunction(theFunction, ...)
+	if self.isHud then
 		BeginScaleformMovieMethodHudComponent(self.handle, theFunction)
-	elseif scType == "normal" then
+	else
 		BeginScaleformMovieMethod(self.handle, theFunction)
 	end
-    local arg = {...}
-    if arg ~= nil then
-        for i=1,#arg do
-            local sType = type(arg[i])
-            if sType == "boolean" then
-                PushScaleformMovieMethodParameterBool(arg[i])
+
+	local arg = {...}
+	if arg ~= nil then
+		for i=1,#arg do
+			local sType = type(arg[i])
+			if sType == "boolean" then
+				PushScaleformMovieMethodParameterBool(arg[i])
 			elseif sType == "number" then
 				if math.type(arg[i]) == "integer" then
 					PushScaleformMovieMethodParameterInt(arg[i])
 				else
 					PushScaleformMovieMethodParameterFloat(arg[i])
 				end
-            elseif sType == "string" then
-                PushScaleformMovieMethodParameterString(arg[i])
-            else
-                PushScaleformMovieMethodParameterInt()
-            end
+			elseif sType == "string" then
+				PushScaleformMovieMethodParameterString(arg[i])
+			else
+				PushScaleformMovieMethodParameterInt()
+			end
 		end
 	end
 	return EndScaleformMovieMethod()
-end
-
-function scaleform:CallHudFunction(theFunction, ...)
-    self:CallScaleFunction("hud", theFunction, ...)
-end
-
-function scaleform:CallFunction(theFunction, ...)
-    self:CallScaleFunction("normal", theFunction, ...)
 end
 
 function scaleform:Draw2D()
@@ -94,7 +87,29 @@ function scaleform:Render3DAdditive(x, y, z, rx, ry, rz, scalex, scaley, scalez)
 end
 
 function scaleform:Dispose()
-	SetScaleformMovieAsNoLongerNeeded(self.handle)
+	if self.isHud then
+		RemoveScaleformScriptHudMovie(self.handle)
+	else
+		SetScaleformMovieAsNoLongerNeeded(self.handle)
+	end
+	self = nil
+end
+
+function scaleform:DisposeAndWait()
+	if self.isHud then
+		RemoveScaleformScriptHudMovie(self.handle)
+
+		while HasScaleformScriptHudMovieLoaded(self.handle) do
+			Wait(0)
+		end
+	else
+		SetScaleformMovieAsNoLongerNeeded(self.handle)
+
+		while HasScaleformMovieLoaded(self.handle) do
+			Wait(0)
+		end
+	end
+
 	self = nil
 end
 
