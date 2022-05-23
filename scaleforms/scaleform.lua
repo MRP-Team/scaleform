@@ -18,9 +18,9 @@ function Scaleform.Request(Name)
 end
 
 function Scaleform.RequestHud(id)
-	local ScaleformHandle = RequestHudScaleform(id)
+	RequestScaleformScriptHudMovie(id)
 	local StartTime = GetGameTimer()
-	while not HasHudScaleformLoaded(ScaleformHandle) do 
+	while not HasScaleformScriptHudMovieLoaded(id) do 
 		Citizen.Wait(0) 
 		if GetGameTimer() - StartTime >= 5000 then
 			print("loading failed")
